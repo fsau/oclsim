@@ -1,7 +1,7 @@
 CC=gcc
 CFLAGS=-O3 -lm -MMD
 PGR=main
-OBJS=ising
+OBJS=oclsim
 
 EXECFILE=$(addprefix build/, $(PGR))
 OBJFILE=$(addsuffix .o, $(addprefix build/, $(OBJS)))
