@@ -36,7 +36,7 @@ struct oclsim_sys
 };
 
 oclCon
-oclsim_init(int plati, int devi)
+oclsim_init(int plat_i, int dev_i)
 {
   oclCon newcon = malloc(sizeof(struct oclsim_con));
   cl_int err=0;
@@ -44,12 +44,12 @@ oclsim_init(int plati, int devi)
 
   err = clGetPlatformIDs(0,NULL,&plats_n);
   cl_platform_id platforms[plats_n];
-  CHKERROR((plati<0)||(plati>=plats_n), "Selected platform is out of range");
+  CHKERROR((plat_i<0)||(plat_i>=plats_n), "Selected platform is out of range");
 
 	err = clGetPlatformIDs(plats_n, platforms, NULL);
   CHKERROR(err<0,"Couldn't idenfity platforms");
 
-  newcon->platform = platforms[plati];
+  newcon->platform = platforms[plat_i];
 
   char platname[100];
   err = clGetPlatformInfo(newcon->platform,CL_PLATFORM_NAME,100,platname,NULL);
@@ -62,14 +62,14 @@ oclsim_init(int plati, int devi)
   cl_device_id devices[devs_n];
   err=clGetDeviceIDs(newcon->platform,CL_DEVICE_TYPE_ALL,devs_n,devices,NULL);
   CHKERROR(err<0,"Couldn't identify device");
-  CHKERROR((plati<0)||(plati>=plats_n),"Selected platform is out of range");
+  CHKERROR((dev_i<0)||(dev_i>=devs_n),"Selected device is out of range");
 
-  newcon->device = devices[devi];
+  newcon->device = devices[dev_i];
   newcon->context = clCreateContext(NULL, 1, &newcon->device, NULL, NULL, &err);
   CHKERROR(err<0,"Couldn't create context");
 
-  newcon->queue = clCreateCommandQueueWithProperties(context, device,
-                  (const cl_queue_properties[])
+  newcon->queue = clCreateCommandQueueWithProperties(newcon->context,
+                  newcon->device,(const cl_queue_properties[])
                   {CL_QUEUE_PROPERTIES,CL_QUEUE_PROFILING_ENABLE, 0}, &err);
 
   return newcon;
@@ -79,8 +79,6 @@ oclSys
 oclsim_new_sys(oclCon con, char *src_file)
 {
   oclSys new_sys = malloc(sizeof(struct oclsim_sys));
-
-  // copy file to buffer
   FILE *src_fh = fopen(src_file, "r");
   char *src_buff;
   size_t src_size;
@@ -90,10 +88,9 @@ oclsim_new_sys(oclCon con, char *src_file)
   fseek(src_fh, 0, SEEK_END);
   src_size = ftell(program_handle);
   rewind(src_fh);
-
   src_buff = (char*)malloc(src_size + 1);
   src_buff[src_size] = '\0';
-  fread(src_buff, sizeof(char), src_size, src_fh);
+  fread(src_buff, sizeof(char), src_size, src_fh); // Copy src_file to buffer
   fclose(src_fh);
 
   new_sys->program = clCreateProgramWithSource(ctx, 1,(const char**)&src_buff,
@@ -102,19 +99,28 @@ oclsim_new_sys(oclCon con, char *src_file)
   free(src_buff);
 
   err = clBuildProgram(new_sys->program, 0, NULL, "-I.", NULL, NULL);
-  if(err < 0)
+  if(err < 0) // Print compilation log if fails for debugging code
   {
     size_t log_size;
     clGetProgramBuildInfo(new_sys->program, new_sys->device,
-                         CL_PROGRAM_BUILD_LOG, 0, NULL, &log_size);
+                          CL_PROGRAM_BUILD_LOG, 0, NULL, &log_size);
     char *log_buff = (char*) malloc(log_size + 1);
     log_buff[log_size] = '\0';
     clGetProgramBuildInfo(new_sys->program, new_sys->device,
-                          CL_PROGRAM_BUILD_LOG, log_size + 1, log_buff, NULL);
+                          CL_PROGRAM_BUILD_LOG, log_size, log_buff, NULL);
     printf("%s\n", log_buff);
     free(log_buff);
     exit(1);
   }
+
+  size_t kernels_n;
+  err=clGetProgramInfo(newsys->program, CL_PROGRAM_NUM_KERNELS, sizeof(size_t),
+      &kernels_n, NULL);
+  newsys->kernels = malloc(sizeof(cl_kernel*)*kernels_n);
+  newsys->kernels[kernels_n]=NULL;
+  err |= clCreateKernelsInProgram(new_sys->program, kernels_n, &newsys->kernels,
+         NULL); // Get all kernels in a NULL terminated array
+  CHKERROR(err<0,"Couldn't get kernels");
 
   return new_sys;
 }
@@ -126,21 +132,35 @@ oclsim_enqueue(oclSys sys)
 }
 
 int
-oclsim_get_data(oclSys sys, void *dataptr)
+oclsim_set_arg(oclSys sys, void *dataptr, size_t size)
 {
 
 }
 
 int
+oclsim_get_data(oclSys sys, void *dataptr, size_t size)
+{
+
+}
+
+void
 oclsim_destroy_con(olcCon con)
 {
+  clReleaseCommandQueue(con->context);
   clReleaseContext(con->context);
   free(con);
 }
 
-int
+void
 oclsim_destroy_sys(olcSys sys)
 {
+  while(*sys->kernels!=NULL)
+  {
+    clReleaseKernel(*sys->kernels);
+    sys->kernels++;
+  }
+  clReleaseProgram(sys->program);
+  free(sys->kernels);
   free(sys);
 }
 
