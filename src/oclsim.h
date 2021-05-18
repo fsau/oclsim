@@ -12,3 +12,25 @@ but WITHOUT ANY WARRANTY; without even the implied warranty of
 MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
 GNU General Public License for more details.
 */
+
+#ifndef OCLSIM_HEADER_BLOCK
+#define OCLSIM_HEADER_BLOCK
+
+#define PINFORM(x, ...) fprintf(stderr, (x), ##__VA_ARGS__)
+#define PERROR(x) fprintf(stderr,\
+"Error on line %d, file %s (function %s):\n%s",\
+__LINE__, __FILE__, __func__, (x))
+#define CHKERROR(flag,str) (if((flag)<0){PERROR(str),exit(1)})
+
+typedef struct _oclsim_context* oclCon;
+typedef struct _oclsim_system* oclSys;
+
+int oclsim_init(int dev, oclCon *con);
+int oclsim_new_sys(oclCon con, char *src_file, oclSys *sys);
+int oclsim_enqueue(oclSys sys);
+int oclsim_get_data(oclSys sys, void *dataptr);
+int oclsim_destroy_con(olcCon con);
+int oclsim_destroy_sys(olcSys sys);
+int oclsim_print_devices(void);
+
+#endif
