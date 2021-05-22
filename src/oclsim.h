@@ -19,13 +19,13 @@ GNU General Public License for more details.
 typedef struct oclsim_con* oclCon;
 typedef struct oclsim_sys* oclSys;
 
-oclCon oclsim_init(int dev);
+oclCon oclsim_init(int plat, int dev);
 oclSys oclsim_new_sys(oclCon con, char *src_file);
 int oclsim_set_arg(oclSys sys, void *argptr, size_t size);
 int oclsim_enqueue(oclSys sys);
 int oclsim_get_data(oclSys sys, void *dataptr, size_t size);
-void oclsim_destroy_con(olcCon con);
-void oclsim_destroy_sys(olcSys sys);
-int oclsim_print_devices(void);
+void oclsim_destroy_con(oclCon con);
+void oclsim_destroy_sys(oclSys sys);
+void oclsim_print_devices(void);
 
 #endif

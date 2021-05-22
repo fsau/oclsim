@@ -13,11 +13,19 @@ MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
 GNU General Public License for more details.
 */
 
-#define PINFORM(x, ...) {fprintf(stderr, (x), ##__VA_ARGS__)}
+#include <stdio.h>
+#include <math.h>
+#include <stdlib.h>
+#include <string.h>
+#define CL_TARGET_OPENCL_VERSION 200
+#include <CL/cl.h>
+#include "oclsim.h"
+
+#define PINFORM(x, ...) {fprintf(stderr, (x), ##__VA_ARGS__);}
 #define PERROR(x) {fprintf(stderr,\
 "Error on line %d, file %s (function %s):\n%s",\
-__LINE__, __FILE__, __func__, (x))}
-#define CHKERROR(flag,str) {if(flag){PERROR(str),exit(1)}}
+__LINE__, __FILE__, __func__, (x));}
+#define CHKERROR(flag,str) {if(flag){PERROR(str);exit(1);};}
 
 struct oclsim_con
 {
@@ -29,6 +37,7 @@ struct oclsim_con
 
 struct oclsim_sys
 {
+  oclCon conref;
   cl_program program;
   cl_kernel *kernels;
   cl_mem *buffers;
@@ -40,7 +49,7 @@ oclsim_init(int plat_i, int dev_i)
 {
   oclCon newcon = malloc(sizeof(struct oclsim_con));
   cl_int err=0;
-  size_t plats_n;
+  cl_uint plats_n;
 
   err = clGetPlatformIDs(0,NULL,&plats_n);
   cl_platform_id platforms[plats_n];
@@ -56,7 +65,7 @@ oclsim_init(int plat_i, int dev_i)
   CHKERROR(err<0,"Couldn't get platform name");
   PINFORM("Selected platform: %s", platname);
 
-  size_t devs_n;
+  cl_uint devs_n;
   err=clGetDeviceIDs(newcon->platform,CL_DEVICE_TYPE_ALL,0,NULL,&devs_n);
 
   cl_device_id devices[devs_n];
@@ -83,18 +92,20 @@ oclsim_new_sys(oclCon con, char *src_file)
   char *src_buff;
   size_t src_size;
   cl_int err=0;
-  CHKERROR(src_fh==NULL, "Couldn't open .cl src file");
 
+  new_sys->conref = con;
+
+  CHKERROR(src_fh==NULL, "Couldn't open .cl src file");
   fseek(src_fh, 0, SEEK_END);
-  src_size = ftell(program_handle);
+  src_size = ftell(src_fh);
   rewind(src_fh);
   src_buff = (char*)malloc(src_size + 1);
   src_buff[src_size] = '\0';
   fread(src_buff, sizeof(char), src_size, src_fh); // Copy src_file to buffer
   fclose(src_fh);
 
-  new_sys->program = clCreateProgramWithSource(ctx, 1,(const char**)&src_buff,
-                                               &src_size, &err);
+  new_sys->program = clCreateProgramWithSource(con->context, 1,(const char**)
+                                               &src_buff, &src_size, &err);
   CHKERROR(err<0, "Couldn't create program");
   free(src_buff);
 
@@ -102,11 +113,11 @@ oclsim_new_sys(oclCon con, char *src_file)
   if(err < 0) // Print compilation log if fails for debugging code
   {
     size_t log_size;
-    clGetProgramBuildInfo(new_sys->program, new_sys->device,
+    clGetProgramBuildInfo(new_sys->program, con->device,
                           CL_PROGRAM_BUILD_LOG, 0, NULL, &log_size);
-    char *log_buff = (char*) malloc(log_size + 1);
+    char *log_buff = (char*)malloc(log_size + 1);
     log_buff[log_size] = '\0';
-    clGetProgramBuildInfo(new_sys->program, new_sys->device,
+    clGetProgramBuildInfo(new_sys->program, con->device,
                           CL_PROGRAM_BUILD_LOG, log_size, log_buff, NULL);
     printf("%s\n", log_buff);
     free(log_buff);
@@ -114,11 +125,11 @@ oclsim_new_sys(oclCon con, char *src_file)
   }
 
   size_t kernels_n;
-  err=clGetProgramInfo(newsys->program, CL_PROGRAM_NUM_KERNELS, sizeof(size_t),
+  err=clGetProgramInfo(new_sys->program, CL_PROGRAM_NUM_KERNELS, sizeof(size_t),
       &kernels_n, NULL);
-  newsys->kernels = malloc(sizeof(cl_kernel*)*kernels_n);
-  newsys->kernels[kernels_n]=NULL;
-  err |= clCreateKernelsInProgram(new_sys->program, kernels_n, &newsys->kernels,
+  new_sys->kernels = malloc(sizeof(cl_kernel*)*kernels_n);
+  new_sys->kernels[kernels_n]=NULL;
+  err |= clCreateKernelsInProgram(new_sys->program, kernels_n, &new_sys->kernels[0],
          NULL); // Get all kernels in a NULL terminated array
   CHKERROR(err<0,"Couldn't get kernels");
 
@@ -144,15 +155,15 @@ oclsim_get_data(oclSys sys, void *dataptr, size_t size)
 }
 
 void
-oclsim_destroy_con(olcCon con)
+oclsim_destroy_con(oclCon con)
 {
-  clReleaseCommandQueue(con->context);
+  clReleaseCommandQueue(con->queue);
   clReleaseContext(con->context);
   free(con);
 }
 
 void
-oclsim_destroy_sys(olcSys sys)
+oclsim_destroy_sys(oclSys sys)
 {
   while(*sys->kernels!=NULL)
   {
@@ -164,7 +175,7 @@ oclsim_destroy_sys(olcSys sys)
   free(sys);
 }
 
-int
+void
 oclsim_print_devices(void)
 {
 

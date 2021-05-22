@@ -1,5 +1,5 @@
 CC=gcc
-CFLAGS=-O3 -lm -MMD
+CFLAGS=-O3 -MMD -lm -lOpenCL
 PGR=main
 OBJS=oclsim
 
