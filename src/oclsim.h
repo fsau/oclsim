@@ -19,13 +19,23 @@ GNU General Public License for more details.
 typedef struct oclsim_con* oclCon;
 typedef struct oclsim_sys* oclSys;
 
-oclCon oclsim_init(int plat, int dev);
-oclSys oclsim_new_sys(oclCon con, char *src_file);
-int oclsim_set_arg(oclSys sys, void *argptr, size_t size);
-int oclsim_enqueue(oclSys sys);
-int oclsim_get_data(oclSys sys, void *dataptr, size_t size);
+void oclsim_print_devices(void);
+
+oclCon oclsim_new_con(int plat_i, int dev_i);
+oclSys oclsim_new_sys_from_file(oclCon con, char* src_filename, size_t states_s);
+oclSys oclsim_new_sys_from_str(oclCon con, char* src_str, size_t states_s);
+
+void oclsim_set_init(oclSys sys, const char* fname, void* arg, size_t arg_s, cl_uint* dims);
+void oclsim_set_main(oclSys sys, const char* fname, void* arg, size_t arg_s, size_t local_s, cl_uint* dims);
+void oclsim_set_meas(oclSys sys, const char* fname, void* arg, size_t arg_s, size_t local_s, size_t meas_s, cl_uint* dims);
+
+void oclsim_run_init(oclSys sys);
+void oclsim_run_main(oclSys sys);
+void oclsim_run_meas(oclSys sys);
+
+void oclsim_get_meas(oclSys sys, void *meas);
+
 void oclsim_destroy_con(oclCon con);
 void oclsim_destroy_sys(oclSys sys);
-void oclsim_print_devices(void);
 
 #endif

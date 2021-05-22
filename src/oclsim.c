@@ -14,11 +14,13 @@ GNU General Public License for more details.
 */
 
 #include <stdio.h>
-#include <math.h>
+// #include <math.h>
 #include <stdlib.h>
 #include <string.h>
+
 #define CL_TARGET_OPENCL_VERSION 200
 #include <CL/cl.h>
+
 #include "oclsim.h"
 
 #define PINFORM(x, ...) {fprintf(stderr, (x), ##__VA_ARGS__);}
@@ -37,15 +39,30 @@ struct oclsim_con
 
 struct oclsim_sys
 {
-  oclCon conref;
+  oclCon con;
   cl_program program;
-  cl_kernel *kernels;
-  cl_mem *buffers;
-  cl_event *events;
+  cl_mem states_b[2];
+  size_t states_s;
+
+  cl_kernel init;
+  cl_mem init_arg;
+  size_t init_arg_s;
+
+  cl_kernel main[2];
+  cl_mem main_arg;
+  size_t main_arg_s;
+  size_t main_local_s;
+
+  cl_kernel meas[2];
+  cl_mem meas_arg;
+  size_t meas_arg_s;
+  size_t meas_local_s;
+
+  // cl_event *events;
 };
 
 oclCon
-oclsim_init(int plat_i, int dev_i)
+oclsim_new_con(int plat_i, int dev_i)
 {
   oclCon newcon = malloc(sizeof(struct oclsim_con));
   cl_int err=0;
@@ -85,29 +102,15 @@ oclsim_init(int plat_i, int dev_i)
 }
 
 oclSys
-oclsim_new_sys(oclCon con, char *src_file)
+oclsim_new_sys_from_str(oclCon con, char *src_str, size_t states_size)
 {
-  oclSys new_sys = malloc(sizeof(struct oclsim_sys));
-  FILE *src_fh = fopen(src_file, "r");
-  char *src_buff;
-  size_t src_size;
   cl_int err=0;
-
-  new_sys->conref = con;
-
-  CHKERROR(src_fh==NULL, "Couldn't open .cl src file");
-  fseek(src_fh, 0, SEEK_END);
-  src_size = ftell(src_fh);
-  rewind(src_fh);
-  src_buff = (char*)malloc(src_size + 1);
-  src_buff[src_size] = '\0';
-  fread(src_buff, sizeof(char), src_size, src_fh); // Copy src_file to buffer
-  fclose(src_fh);
+  oclSys new_sys = malloc(sizeof(struct oclsim_sys));
+  size_t src_size = strlen(src_str);
 
   new_sys->program = clCreateProgramWithSource(con->context, 1,(const char**)
-                                               &src_buff, &src_size, &err);
+                                               &src_str, &src_size, &err);
   CHKERROR(err<0, "Couldn't create program");
-  free(src_buff);
 
   err = clBuildProgram(new_sys->program, 0, NULL, "-I.", NULL, NULL);
   if(err < 0) // Print compilation log if fails for debugging code
@@ -124,14 +127,36 @@ oclsim_new_sys(oclCon con, char *src_file)
     exit(1);
   }
 
-  size_t kernels_n;
-  err=clGetProgramInfo(new_sys->program, CL_PROGRAM_NUM_KERNELS, sizeof(size_t),
-      &kernels_n, NULL);
-  new_sys->kernels = malloc(sizeof(cl_kernel*)*kernels_n);
-  new_sys->kernels[kernels_n]=NULL;
-  err |= clCreateKernelsInProgram(new_sys->program, kernels_n, &new_sys->kernels[0],
-         NULL); // Get all kernels in a NULL terminated array
-  CHKERROR(err<0,"Couldn't get kernels");
+  // size_t kernels_n;
+  // err=clGetProgramInfo(new_sys->program, CL_PROGRAM_NUM_KERNELS, sizeof(size_t),
+  //     &kernels_n, NULL);
+  // new_sys->kernels = malloc(sizeof(cl_kernel*)*kernels_n);
+  // new_sys->kernels[kernels_n]=NULL;
+  // err |= clCreateKernelsInProgram(new_sys->program, kernels_n, &new_sys->kernels[0],
+  //        NULL); // Get all kernels in a NULL terminated array
+  // CHKERROR(err<0,"Couldn't get kernels");
+
+  new_sys->con = con;
+  return new_sys;
+}
+
+oclSys
+oclsim_new_sys_from_file(oclCon con, char *src_filename, size_t states_size)
+{
+  FILE *src_fh = fopen(src_filename, "r");
+  char *src_buff;
+  size_t src_size;
+
+  CHKERROR(src_fh==NULL, "Couldn't open .cl src file");
+  fseek(src_fh, 0, SEEK_END);
+  src_size = ftell(src_fh);
+  rewind(src_fh);
+  src_buff = (char*)malloc(src_size + 1);
+  src_buff[src_size] = '\0';
+  fread(src_buff, sizeof(char), src_size, src_fh); // Copy src to buffer
+  fclose(src_fh);
+  oclSys new_sys = oclsim_new_sys_from_str(con, src_buff, states_size);
+  free(src_buff);
 
   return new_sys;
 }
