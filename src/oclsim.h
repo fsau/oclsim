@@ -16,11 +16,8 @@ GNU General Public License for more details.
 #ifndef OCLSIM_HEADER_BLOCK
 #define OCLSIM_HEADER_BLOCK
 
-// kernel void init_k(void* output, void* arg)
 #define INIT_K_NAME "init"
-// kernel void update_k(void* output, void* input, void* local, void* arg)
 #define MAIN_K_NAME "update"
-// kernel void measure_k(void* output, void* input, void* local, void* arg)
 #define MEASURE_K_NAME "measure"
 
 typedef struct oclsim_sys* oclSys;
@@ -48,6 +45,6 @@ void cls_run_meas(oclSys sys);
 
 size_t cls_get_meas(oclSys sys, void *out);
 
-void cls_destroy_sys(oclSys sys);
+void cls_release_sys(oclSys sys);
 
 #endif

@@ -16,25 +16,22 @@ GNU General Public License for more details.
 #ifndef ISING_DEFS_HEADER
 #define ISING_DEFS_HEADER
 
+// Definitions & constants:
 #define SIZEX 64
 #define SIZEY 64
-#define VECLEN (SIZEX*SIZEY)
+#define NEIGH_N 4
 #define BUFFLEN 1024
+#define VECLEN (SIZEX*SIZEY)
 
-#ifdef __OPENCL_VERSION__
-typedef float state_t;
-typedef float out_t;
-typedef int int_t;
-typedef float float_t;
-typedef long rand_st;
-#else
-typedef cl_float state_t;
-typedef cl_float out_t;
-typedef cl_int int_t;
-typedef cl_float float_t;
-typedef cl_long rand_st;
-#endif
+// Macros:
+#define MAX(x,y) ((x)>(y)?(x):(y))
+#define MIN(x,y) ((x)>(y)?(y):(x))
+#define IND(x,y) ( (x)*SIZEX + (y) ) // 2D xy -> 1D vector
+#define RIND(x,y) ( ((x)%SIZEX)*SIZEX + ((y)%SIZEY) ) // rectangular
+#define TIND(x,y) ( ((x)*SIZEX + (y))%VECLEN ) // torus
+#define GETI(c,x,y) (y=c-(x=c/SIZEX)); // 1D vector -> 2D xy
 
+// Structs:
 struct output_s
 {
   state_t state[VECLEN*BUFFLEN];
@@ -61,7 +58,23 @@ struct main_arg_s
 
 struct meas_arg_s
 {
+  // empty
 };
+
+// Typedefs:
+#ifdef __OPENCL_VERSION__
+typedef float state_t;
+typedef float out_t;
+typedef int int_t;
+typedef float float_t;
+typedef long rand_st;
+#else
+typedef cl_float state_t;
+typedef cl_float out_t;
+typedef cl_int int_t;
+typedef cl_float float_t;
+typedef cl_long rand_st;
+#endif
 
 typedef struct state_s* state_p;
 typedef struct output_s* output_p;

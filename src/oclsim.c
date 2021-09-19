@@ -18,7 +18,7 @@ GNU General Public License for more details.
 #include <stdlib.h>
 #include <string.h>
 
-#define CL_TARGET_OPENCL_VERSION 200
+#define CL_TARGET_OPENCL_VERSION 120
 #include <CL/cl.h>
 
 #include "oclsim.h"
@@ -36,7 +36,7 @@ struct oclsim_sys
   cl_context context;
   cl_command_queue queue;
   cl_program program;
-  int state;
+  char state;
 
   cl_mem states_b[2];
   size_t states_s;
@@ -94,9 +94,8 @@ cls_new_sys(int plat_i, int dev_i)
   newsys->context = clCreateContext(NULL, 1, &newsys->device, NULL, NULL, &err);
   CHKERROR(err<0,"Couldn't create context");
 
-  newsys->queue = clCreateCommandQueueWithProperties(newsys->context,
-                  newsys->device,(const cl_queue_properties[])
-                  {CL_QUEUE_PROPERTIES,CL_QUEUE_PROFILING_ENABLE, 0}, &err);
+  newsys->queue = clCreateCommandQueue(newsys->context,
+                  newsys->device,CL_QUEUE_PROFILING_ENABLE, &err);
 
   return newsys;
 }
@@ -292,12 +291,12 @@ cls_run_meas(oclSys sys)
 size_t
 cls_get_meas(oclSys sys, void *out)
 {
+  cl_int err=0;
+
   if(out==NULL)
   {
     return sys->output_s;
   }
-
-  cl_int err=0;
 
 	err|=clFlush(sys->queue);
 	err|=clFinish(sys->queue);
