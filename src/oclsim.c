@@ -14,12 +14,8 @@ GNU General Public License for more details.
 */
 
 #include <stdio.h>
-// #include <math.h>
 #include <stdlib.h>
 #include <string.h>
-
-#define CL_TARGET_OPENCL_VERSION 120
-#include <CL/cl.h>
 
 #include "oclsim.h"
 
@@ -160,19 +156,15 @@ cls_set_init_arg(oclSys sys, void* arg, size_t arg_s, dims_i dims)
 {
   cl_int err=0;
 
-  if((sys->init_arg_s!=arg_s)||(sys->init_arg_b==NULL))
-  {
-    if(sys->init_arg_b!=NULL) clReleaseMemObject(sys->init_arg_b);
-    sys->init_arg_s = arg_s;
-    sys->init_arg_b = clCreateBuffer(sys->context, CL_MEM_READ_ONLY, arg_s, NULL, &err);
-  }
+  // if((sys->init_arg_s!=arg_s)||(sys->init_arg_b==NULL))
+  // {
+  //   if(sys->init_arg_b!=NULL) clReleaseMemObject(sys->init_arg_b);
+  sys->init_arg_s = arg_s;
+  sys->init_arg_b = clCreateBuffer(sys->context, CL_MEM_READ_ONLY, arg_s, NULL, &err);
+  // }
 
   sys->init_d = dims;
-
   err |= clEnqueueWriteBuffer(sys->queue, sys->init_arg_b, CL_FALSE, 0, arg_s, arg, 0, NULL, NULL);
-
-  err |= clSetKernelArg(sys->init_k, 0, sizeof(cl_mem), sys->states_b[0]);
-  err |= clSetKernelArg(sys->init_k, 1, sizeof(cl_mem), sys->init_arg_b);
 
   CHKERROR(err<0,"Coudn't create/configure init kernel");
 }
@@ -182,28 +174,21 @@ cls_set_main_arg(oclSys sys, void* arg, size_t arg_s, size_t local_s, dims_i dim
 {
   cl_int err=0;
 
-  if((sys->main_arg_s!=arg_s)||(sys->main_arg_b==NULL))
-  {
-    if(sys->main_arg_b!=NULL) clReleaseMemObject(sys->main_arg_b);
-    sys->main_arg_s = arg_s;
-    sys->main_arg_b = clCreateBuffer(sys->context, CL_MEM_READ_ONLY, arg_s, NULL, &err);
-  }
+  // if((sys->main_arg_s!=arg_s)||(sys->main_arg_b==NULL))
+  // {
+  //   if(sys->main_arg_b!=NULL) clReleaseMemObject(sys->main_arg_b);
+  sys->main_arg_s = arg_s;
+  sys->main_arg_b = clCreateBuffer(sys->context, CL_MEM_READ_ONLY, arg_s, NULL, &err);
+  // }
 
   sys->main_d = dims;
   sys->main_local_s = local_s;
 
   err |= clEnqueueWriteBuffer(sys->queue, sys->main_arg_b, CL_FALSE, 0, arg_s, arg, 0, NULL, NULL);
-
-  err |= clSetKernelArg(sys->main_k[0], 0, sizeof(cl_mem), sys->states_b[1]);
-  err |= clSetKernelArg(sys->main_k[0], 1, sizeof(cl_mem), sys->states_b[0]);
   err |= clSetKernelArg(sys->main_k[0], 2, local_s, NULL);
-  err |= clSetKernelArg(sys->main_k[0], 3, sizeof(cl_mem), sys->main_arg_b);
-
-  err |= clSetKernelArg(sys->main_k[1], 0, sizeof(cl_mem), sys->states_b[0]);
-  err |= clSetKernelArg(sys->main_k[1], 1, sizeof(cl_mem), sys->states_b[1]);
   err |= clSetKernelArg(sys->main_k[1], 2, local_s, NULL);
-  err |= clSetKernelArg(sys->main_k[1], 3, sizeof(cl_mem), sys->main_arg_b);
 
+  printf("%d\n",err);
   CHKERROR(err<0,"Coudn't create/configure main kernel");
 }
 
@@ -212,34 +197,27 @@ cls_set_meas_arg(oclSys sys, void* arg, size_t arg_s, size_t local_s, size_t mea
 {
   cl_int err=0;
 
-  if((sys->meas_arg_s!=arg_s)||(sys->meas_arg_b==NULL))
-  {
-    if(sys->meas_arg_b!=NULL) clReleaseMemObject(sys->meas_arg_b);
-    sys->meas_arg_s = arg_s;
-    sys->meas_arg_b = clCreateBuffer(sys->context, CL_MEM_READ_ONLY, arg_s, NULL, &err);
-  }
+  // if((sys->meas_arg_s!=arg_s)||(sys->meas_arg_b==NULL))
+  // {
+  //   if(sys->meas_arg_b!=NULL) clReleaseMemObject(sys->meas_arg_b);
+  sys->meas_arg_s = arg_s;
+  sys->meas_arg_b = clCreateBuffer(sys->context, CL_MEM_READ_ONLY, arg_s, NULL, &err);
+  // }
 
-  if((sys->output_s!=meas_s)||(sys->output_b==NULL))
-  {
-    if(sys->output_b!=NULL) clReleaseMemObject(sys->output_b);
-    sys->output_s = meas_s;
-    sys->output_b = clCreateBuffer(sys->context, CL_MEM_WRITE_ONLY, meas_s, NULL, &err);
-  }
+  // if((sys->output_s!=meas_s)||(sys->output_b==NULL))
+  // {
+  //   if(sys->output_b!=NULL) clReleaseMemObject(sys->output_b);
+  sys->output_s = meas_s;
+  sys->output_b = clCreateBuffer(sys->context, CL_MEM_READ_WRITE, meas_s, NULL, &err);
+  // }
 
   sys->meas_d = dims;
   sys->meas_local_s = local_s;
 
   err |= clEnqueueWriteBuffer(sys->queue, sys->meas_arg_b, CL_FALSE, 0, arg_s, arg, 0, NULL, NULL);
 
-  err |= clSetKernelArg(sys->meas_k[0], 0, sizeof(cl_mem), sys->output_b);
-  err |= clSetKernelArg(sys->meas_k[0], 1, sizeof(cl_mem), sys->states_b[0]);
   err |= clSetKernelArg(sys->meas_k[0], 2, local_s, NULL);
-  err |= clSetKernelArg(sys->meas_k[0], 3, sizeof(cl_mem), sys->meas_arg_b);
-
-  err |= clSetKernelArg(sys->meas_k[1], 0, sizeof(cl_mem), sys->output_b);
-  err |= clSetKernelArg(sys->meas_k[1], 1, sizeof(cl_mem), sys->states_b[1]);
   err |= clSetKernelArg(sys->meas_k[1], 2, local_s, NULL);
-  err |= clSetKernelArg(sys->meas_k[1], 3, sizeof(cl_mem), sys->meas_arg_b);
 
   CHKERROR(err<0,"Coudn't create/configure measure kernel");
 }
@@ -248,15 +226,24 @@ void
 cls_run_init(oclSys sys)
 {
   cl_int err=0;
+  err |= clSetKernelArg(sys->init_k, 0, sizeof(cl_mem), sys->states_b[0]);
+  err |= clSetKernelArg(sys->init_k, 1, sizeof(cl_mem), sys->init_arg_b);
   clEnqueueNDRangeKernel(sys->queue, sys->init_k, sys->init_d.dim, NULL,
     sys->init_d.global, sys->init_d.local, 0, NULL, NULL);
   CHKERROR(err<0,"Coudn't enqueue init kernel");
 }
 
 void
-cls_run_main(oclSys sys)
+cls_run_update(oclSys sys)
 {
   cl_int err=0;
+  err |= clSetKernelArg(sys->main_k[0], 0, sizeof(cl_mem), sys->states_b[1]);
+  err |= clSetKernelArg(sys->main_k[0], 1, sizeof(cl_mem), sys->states_b[0]);
+  err |= clSetKernelArg(sys->main_k[0], 3, sizeof(cl_mem), sys->main_arg_b);
+
+  err |= clSetKernelArg(sys->main_k[1], 0, sizeof(cl_mem), sys->states_b[0]);
+  err |= clSetKernelArg(sys->main_k[1], 1, sizeof(cl_mem), sys->states_b[1]);
+  err |= clSetKernelArg(sys->main_k[1], 3, sizeof(cl_mem), sys->main_arg_b);
   if(~sys->state&0x01)
   {
     err|=clEnqueueNDRangeKernel(sys->queue, sys->main_k[0], sys->main_d.dim, NULL,
@@ -275,6 +262,13 @@ void
 cls_run_meas(oclSys sys)
 {
   cl_int err=0;
+  err |= clSetKernelArg(sys->meas_k[0], 0, sizeof(cl_mem), sys->output_b);
+  err |= clSetKernelArg(sys->meas_k[0], 1, sizeof(cl_mem), sys->states_b[0]);
+  err |= clSetKernelArg(sys->meas_k[0], 3, sizeof(cl_mem), sys->meas_arg_b);
+
+  err |= clSetKernelArg(sys->meas_k[1], 0, sizeof(cl_mem), sys->output_b);
+  err |= clSetKernelArg(sys->meas_k[1], 1, sizeof(cl_mem), sys->states_b[1]);
+  err |= clSetKernelArg(sys->meas_k[1], 3, sizeof(cl_mem), sys->meas_arg_b);
   if(~sys->state&0x01)
   {
     err|=clEnqueueNDRangeKernel(sys->queue, sys->meas_k[0], sys->meas_d.dim, NULL,
@@ -293,20 +287,20 @@ cls_get_meas(oclSys sys, void *out)
 {
   cl_int err=0;
 
-  if(out==NULL)
+  if(out!=NULL)
   {
-    return sys->output_s;
+    err|=clFlush(sys->queue);
+    err|=clFinish(sys->queue);
+    err|= clEnqueueReadBuffer(sys->queue, sys->output_b, CL_TRUE, 0,
+      sys->output_s, out, 0, NULL, NULL);
+    CHKERROR(err<0,"Coudn't read output data");
   }
 
-	err|=clFlush(sys->queue);
-	err|=clFinish(sys->queue);
-  err|= clEnqueueReadBuffer(sys->queue, sys->output_b, CL_TRUE, 0,
-    sys->output_s, out, 0, NULL, NULL);
-  CHKERROR(err<0,"Coudn't read output data");
+  return sys->output_s;
 }
 
 void
-cls_destroy_sys(oclSys sys)
+cls_release_sys(oclSys sys)
 {
   if(sys->program) {clReleaseProgram(sys->program); sys->program=NULL;}
   if(sys->queue) {clReleaseCommandQueue(sys->queue); sys->queue=NULL;}

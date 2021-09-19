@@ -16,6 +16,9 @@ GNU General Public License for more details.
 #ifndef OCLSIM_HEADER_BLOCK
 #define OCLSIM_HEADER_BLOCK
 
+#define CL_TARGET_OPENCL_VERSION 200
+#include <CL/cl.h>
+
 #define INIT_K_NAME "init"
 #define MAIN_K_NAME "update"
 #define MEASURE_K_NAME "measure"
@@ -32,15 +35,15 @@ typedef struct _dims_i
 // void ocls_print_devices(void);
 oclSys cls_new_sys(int plat_i, int dev_i);
 
-void cls_load_src_file(oclSys sys, char* src_filename, size_t states_s);
-void cls_load_src_str(oclSys sys, char* src_str, size_t states_s);
+void cls_load_sys_from_file(oclSys sys, char* src_filename, size_t states_s);
+void cls_load_sys_from_str(oclSys sys, char* src_str, size_t states_s);
 
 void cls_set_init_arg(oclSys sys, void* arg, size_t arg_s, dims_i dims);
 void cls_set_main_arg(oclSys sys, void* arg, size_t arg_s, size_t local_s, dims_i dims);
 void cls_set_meas_arg(oclSys sys, void* arg, size_t arg_s, size_t local_s, size_t meas_s, dims_i dims);
 
 void cls_run_init(oclSys sys);
-void cls_run_main(oclSys sys);
+void cls_run_update(oclSys sys);
 void cls_run_meas(oclSys sys);
 
 size_t cls_get_meas(oclSys sys, void *out);

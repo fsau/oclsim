@@ -1,12 +1,12 @@
 CC=gcc
-CFLAGS=-O3 -MMD -lm -lOpenCL
+CFLAGS=-g -O3 -MMD -lm -lOpenCL
 PGR=main
 OBJS=oclsim
 
 EXECFILE=$(addprefix build/, $(PGR))
-OBJFILE=$(addsuffix .o, $(addprefix build/, $(OBJS)))
-OBJSRC=$(addsuffix .c, $(addprefix src/, $(OBJS)))
-PGRSRC=$(addsuffix .c, $(addprefix src/, $(PGR)))
+OBJFILE=$(addsuffix .o, $(addprefix ./build/, $(OBJS)))
+OBJSRC=$(addsuffix .c, $(addprefix ./, $(OBJS)))
+PGRSRC=$(addsuffix .c, $(addprefix ./, $(PGR)))
 
 all: build/ $(EXECFILE)
 
@@ -14,7 +14,7 @@ build/:
 	mkdir -p build/
 
 $(EXECFILE): $(PGRSRC) $(OBJFILE)
-	$(CC) $(CFLAGS) $(PGRSRC) -o $(EXECFILE)
+	$(CC) $(CFLAGS) $(PGRSRC) -o $(EXECFILE) $(OBJFILE)
 
 $(OBJFILE): $(OBJSRC)
 	$(CC) $(CFLAGS) -c $(OBJSRC) -o $(OBJFILE)
