@@ -46,8 +46,8 @@ void cls_run_init(oclSys sys);
 void cls_run_main(oclSys sys);
 void cls_run_meas(oclSys sys);
 
-void oclsim_get_meas(oclSys sys, void *out, size_t meas_s);
+size_t cls_get_meas(oclSys sys, void *out);
 
-void oclsim_destroy_sys(oclSys sys);
+void cls_destroy_sys(oclSys sys);
 
 #endif
