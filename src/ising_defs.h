@@ -29,7 +29,7 @@ GNU General Public License for more details.
 #define IND(x,y) ( (x)*SIZEX + (y) ) // 2D xy -> 1D vector
 #define RIND(x,y) ( ((x)%SIZEX)*SIZEX + ((y)%SIZEY) ) // rectangular
 #define TIND(x,y) ( ((x)*SIZEX + (y))%VECLEN ) // torus
-#define GETI(c,x,y) (y=c-(x=c/SIZEX)); // 1D vector -> 2D xy
+#define GETI(c,x,y) ( (y) = ((c)-((x)=(c)/SIZEX)) ); // 1D vector -> 2D xy
 
 // Structs:
 struct output_s
