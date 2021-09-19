@@ -248,38 +248,38 @@ cls_set_meas_arg(oclSys sys, void* arg, size_t arg_s, size_t local_s, size_t mea
 void
 cls_run_init(oclSys sys)
 {
-  clEnqueueNDRangeKernel(sys.queue, sys.init_k, sys.init_d.dim, NULL,
-    sys.init_d.global, sys.init_d.local, 0, NULL, NULL);
+  clEnqueueNDRangeKernel(sys->queue, sys->init_k, sys->init_d.dim, NULL,
+    sys->init_d.global, sys->init_d.local, 0, NULL, NULL);
 }
 
 void
 cls_run_main(oclSys sys)
 {
-  if(~sys.state&0x01)
+  if(~sys->state&0x01)
   {
-    clEnqueueNDRangeKernel(sys.queue, sys.main_k[0], sys.main_d.dim, NULL,
-      sys.main_d.global, sys.main_d.local, 0, NULL, NULL);
+    clEnqueueNDRangeKernel(sys->queue, sys->main_k[0], sys->main_d.dim, NULL,
+      sys->main_d.global, sys->main_d.local, 0, NULL, NULL);
   }
   else
   {
-    clEnqueueNDRangeKernel(sys.queue, sys.main_k[1], sys.main_d.dim, NULL,
-      sys.main_d.global, sys.main_d.local, 0, NULL, NULL);
+    clEnqueueNDRangeKernel(sys->queue, sys->main_k[1], sys->main_d.dim, NULL,
+      sys->main_d.global, sys->main_d.local, 0, NULL, NULL);
   }
-  sys.state^=1;
+  sys->state^=1;
 }
 
 void
 cls_run_meas(oclSys sys)
 {
-  if(~sys.state&0x01)
+  if(~sys->state&0x01)
   {
-    clEnqueueNDRangeKernel(sys.queue, sys.meas_k[0], sys.meas_d.dim, NULL,
-      sys.meas_d.global, sys.meas_d.local, 0, NULL, NULL);
+    clEnqueueNDRangeKernel(sys->queue, sys->meas_k[0], sys->meas_d.dim, NULL,
+      sys->meas_d.global, sys->meas_d.local, 0, NULL, NULL);
   }
   else
   {
-    clEnqueueNDRangeKernel(sys.queue, sys.meas_k[1], sys.meas_d.dim, NULL,
-      sys.meas_d.global, sys.meas_d.local, 0, NULL, NULL);
+    clEnqueueNDRangeKernel(sys->queue, sys->meas_k[1], sys->meas_d.dim, NULL,
+      sys->meas_d.global, sys->meas_d.local, 0, NULL, NULL);
   }
 }
 

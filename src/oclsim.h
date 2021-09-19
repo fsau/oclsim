@@ -27,9 +27,9 @@ typedef struct oclsim_sys* oclSys;
 
 typedef struct _dims_i
 {
-  cl_uint dim; // run dimensions
-  cl_uint global[3]; // global range
-  cl_uint local[3]; // local range
+  size_t dim; // run dimensions
+  size_t global[3]; // global range
+  size_t local[3]; // local range
 } dims_i;
 
 // void ocls_print_devices(void);
