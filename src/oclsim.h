@@ -17,11 +17,11 @@ GNU General Public License for more details.
 #define OCLSIM_HEADER_BLOCK
 
 // kernel void init_k(void* output, void* arg)
-#define INIT_KERNEL_NAME "init"
+#define INIT_K_NAME "init"
 // kernel void update_k(void* output, void* input, void* local, void* arg)
-#define MAIN_KERNEL_NAME "update"
+#define MAIN_K_NAME "update"
 // kernel void measure_k(void* output, void* input, void* local, void* arg)
-#define MEASURE_KERNEL_NAME "measure"
+#define MEASURE_K_NAME "measure"
 
 typedef struct oclsim_sys* oclSys;
 

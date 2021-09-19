@@ -126,11 +126,11 @@ cls_load_sys_from_str(oclSys sys, char *src_str, size_t states_size)
     exit(1);
   }
 
-  sys->init_k = clCreateKernel(sys->program, INIT_KERNEL_NAME, &err);
-  sys->main_k[0] = clCreateKernel(sys->program, MAIN_KERNEL_NAME, &err);
-  sys->main_k[1] = clCreateKernel(sys->program, MAIN_KERNEL_NAME, &err);
-  sys->meas_k[0] = clCreateKernel(sys->program, MEASURE_KERNEL_NAME, &err);
-  sys->meas_k[1] = clCreateKernel(sys->program, MEASURE_KERNEL_NAME, &err);
+  sys->init_k = clCreateKernel(sys->program, INIT_K_NAME, &err);
+  sys->main_k[0] = clCreateKernel(sys->program, MAIN_K_NAME, &err);
+  sys->main_k[1] = clCreateKernel(sys->program, MAIN_K_NAME, &err);
+  sys->meas_k[0] = clCreateKernel(sys->program, MEASURE_K_NAME, &err);
+  sys->meas_k[1] = clCreateKernel(sys->program, MEASURE_K_NAME, &err);
 
   sys->states_s = states_size;
   sys->states_b[0] = clCreateBuffer(sys->context, CL_MEM_READ_WRITE, states_size, NULL, &err);
