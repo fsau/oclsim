@@ -17,17 +17,17 @@ GNU General Public License for more details.
 #define OCLSIM_HEADER_BLOCK
 
 // kernel void init_k(void* output, void* arg)
-#define INIT_KERNEL_NAME "init_k"
+#define INIT_KERNEL_NAME "init"
 // kernel void update_k(void* output, void* input, void* local, void* arg)
-#define MAIN_KERNEL_NAME "update_k"
+#define MAIN_KERNEL_NAME "update"
 // kernel void measure_k(void* output, void* input, void* local, void* arg)
-#define MEASURE_KERNEL_NAME "measure_k"
+#define MEASURE_KERNEL_NAME "measure"
 
 typedef struct oclsim_sys* oclSys;
 
 typedef struct _dims_i
 {
-  cl_uint dim; // execution dimensions
+  cl_uint dim; // run dimensions
   cl_uint global[3]; // global range
   cl_uint local[3]; // local range
 } dims_i;
