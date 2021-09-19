@@ -107,7 +107,7 @@ cls_load_sys_from_str(oclSys sys, char *src_str, size_t states_size)
   cl_int err=0;
   size_t src_size = strlen(src_str);
 
-  sys->program = clCreateProgramWithSource(con->context, 1,(const char**)
+  sys->program = clCreateProgramWithSource(sys->context, 1,(const char**)
                                                &src_str, &src_size, &err);
   CHKERROR(err<0, "Couldn't create program");
 
@@ -115,18 +115,18 @@ cls_load_sys_from_str(oclSys sys, char *src_str, size_t states_size)
   if(err < 0) // Print compilation log if fails for debugging code
   {
     size_t log_size;
-    clGetProgramBuildInfo(sys->program, con->device,
+    clGetProgramBuildInfo(sys->program, sys->device,
                           CL_PROGRAM_BUILD_LOG, 0, NULL, &log_size);
     char *log_buff = (char*)malloc(log_size + 1);
     log_buff[log_size] = '\0';
-    clGetProgramBuildInfo(sys->program, con->device,
+    clGetProgramBuildInfo(sys->program, sys->device,
                           CL_PROGRAM_BUILD_LOG, log_size, log_buff, NULL);
     printf("%s\n", log_buff);
     free(log_buff);
     exit(1);
   }
 
-  sys->init = clCreateKernel(sys->program, INIT_KERNEL_NAME, &err);
+  sys->init_k = clCreateKernel(sys->program, INIT_KERNEL_NAME, &err);
   sys->main_k[0] = clCreateKernel(sys->program, MAIN_KERNEL_NAME, &err);
   sys->main_k[1] = clCreateKernel(sys->program, MAIN_KERNEL_NAME, &err);
   sys->meas_k[0] = clCreateKernel(sys->program, MEASURE_KERNEL_NAME, &err);
@@ -152,10 +152,8 @@ cls_load_sys_from_file(oclSys sys, char *src_filename, size_t states_size)
   src_buff[src_size] = '\0';
   fread(src_buff, sizeof(char), src_size, src_fh); // Copy src to buffer
   fclose(src_fh);
-  oclSys new_sys = oclsim_new_sys_from_str(sys, src_buff, states_size);
+  cls_load_sys_from_str(sys, src_buff, states_size);
   free(src_buff);
-
-  return new_sys;
 }
 
 void
@@ -187,10 +185,11 @@ cls_set_main_arg(oclSys sys, void* arg, size_t arg_s, size_t local_s, dims_i dim
   {
     if(sys->main_arg!=NULL) clReleaseMemObject(sys->main_arg);
     sys->main_arg_s = arg_s;
-    sys->main_local_s = local_s;
     sys->main_arg = clCreateBuffer(sys->context, CL_MEM_READ_ONLY, arg_s, NULL, &err);
   }
 
+  sys->main_dims = dims;
+  sys->main_local_s = local_s;
   err |= clSetKernelArg(sys->main_k[0], 0, sizeof(cl_mem), sys->states_b[1]);
   err |= clSetKernelArg(sys->main_k[0], 1, sizeof(cl_mem), sys->states_b[0]);
   err |= clSetKernelArg(sys->main_k[0], 2, local_s, NULL);
@@ -200,7 +199,6 @@ cls_set_main_arg(oclSys sys, void* arg, size_t arg_s, size_t local_s, dims_i dim
   err |= clSetKernelArg(sys->main_k[1], 2, local_s, NULL);
   err |= clSetKernelArg(sys->main_k[1], 3, sizeof(cl_mem), sys->main_arg);
   err |= clEnqueueWriteBuffer(sys->queue, sys->main_arg, CL_FALSE, 0, arg_s, arg, 0, NULL, NULL);
-  sys->main_dims = dims;
 
   CHKERROR(err<0,"Coudn't create/configure main kernel");
 }
@@ -210,7 +208,7 @@ cls_set_meas_arg(oclSys sys, void* arg, size_t arg_s, size_t local_s, size_t mea
 {
   cl_int err=0;
 
-  if((sys->meas_arg_s!=arg_s)||(sys->meas_local_s!=arg_s)||(sys->meas_arg==NULL))
+  if((sys->meas_arg_s!=arg_s)||(sys->meas_arg==NULL))
   {
     if(sys->meas_arg!=NULL) clReleaseMemObject(sys->meas_arg);
     sys->meas_arg_s = arg_s;
@@ -247,22 +245,20 @@ cls_destroy_sys(oclSys sys)
   if(sys->context) {clReleaseContext(sys->context); sys->context=NULL;}
   if(sys->states_b[0]) {clReleaseMemObject(sys->states_b[0]); sys->states_b[0]=NULL;}
   if(sys->states_b[1]) {clReleaseMemObject(sys->states_b[1]); sys->states_b[1]=NULL;}
-  if(sys->init_k[0]) {clReleaseKernel(sys->init_k[0]); sys->init_k[0])=NULL;}
-  if(sys->init_k[1]) {clReleaseKernel(sys->init_k[1]); sys->init_k[1])=NULL;}
+  if(sys->init_k) {clReleaseKernel(sys->init_k); sys->init_k=NULL;}
   if(sys->init_arg) {clReleaseMemObject(sys->init_arg); sys->init_arg=NULL;}
-  if(sys->main_k[0]) {clReleaseKernel(sys->main_k[0]); sys->main_k[0])=NULL;}
-  if(sys->main_k[1]) {clReleaseKernel(sys->main_k[1]); sys->main_k[1])=NULL;}
+  if(sys->main_k[0]) {clReleaseKernel(sys->main_k[0]); sys->main_k[0]=NULL;}
+  if(sys->main_k[1]) {clReleaseKernel(sys->main_k[1]); sys->main_k[1]=NULL;}
   if(sys->main_arg) {clReleaseMemObject(sys->main_arg); sys->main_arg=NULL;}
-  if(sys->meas_k[0]) {clReleaseKernel(sys->meas_k[0]); sys->meas_k[0])=NULL;}
-  if(sys->meas_k[1]) {clReleaseKernel(sys->meas_k[1]); sys->meas_k[1])=NULL;}
+  if(sys->meas_k[0]) {clReleaseKernel(sys->meas_k[0]); sys->meas_k[0]=NULL;}
+  if(sys->meas_k[1]) {clReleaseKernel(sys->meas_k[1]); sys->meas_k[1]=NULL;}
   if(sys->meas_arg) {clReleaseMemObject(sys->meas_arg); sys->meas_arg=NULL;}
   if(sys->output_b) {clReleaseMemObject(sys->output_b); sys->output_b=NULL;}
-
   free(sys);
 }
 
-void
-cls_print_devices(void)
-{
-
-}
+// void
+// cls_print_devices(void)
+// {
+//
+// }
