@@ -83,13 +83,13 @@ kernel void
 measure(global struct output_s *output,
         global struct state_s *input,
         local void* lc_skpd,
-        const struct meas_arg_s arg)
+        constant struct meas_arg_s *arg)
 {
   size_t i = get_global_id(0),
          i_l = get_local_id(0),
          i_T = get_local_size(0);
   uint iter = input->counter;
-  size_t out_i = iter/arg.idiv;
+  size_t out_i = iter/arg->idiv;
   state_t self_s = input->state[i];
   local state_t *local_buff = lc_skpd;
 
