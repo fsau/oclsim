@@ -135,16 +135,6 @@ cls_load_sys_from_str(oclSys sys, char *src_str, size_t states_size)
   sys->states_s = states_size;
   sys->states_b[0] = clCreateBuffer(sys->context, CL_MEM_READ_WRITE, states_size, NULL, &err);
   sys->states_b[1] = clCreateBuffer(sys->context, CL_MEM_READ_WRITE, states_size, NULL, &err);
-
-  // get binaries:
-  // size_t kernels_n;
-  // err=clGetProgramInfo(sys->program, CL_PROGRAM_NUM_KERNELS, sizeof(size_t),
-  //     &kernels_n, NULL);
-  // sys->kernels = malloc(sizeof(cl_kernel*)*kernels_n);
-  // sys->kernels[kernels_n]=NULL;
-  // err |= clCreateKernelsInProgram(sys->program, kernels_n, &new_sys->kernels[0],
-  //        NULL); // Get all kernels in a NULL terminated array
-  // CHKERROR(err<0,"Couldn't get kernels");
 }
 
 void
@@ -252,66 +242,21 @@ cls_set_meas_arg(oclSys sys, void* arg, size_t arg_s, size_t local_s, size_t mea
 void
 cls_destroy_sys(oclSys sys)
 {
-  if(sys->program) (
-    clReleaseProgram(sys->program);
-    sys->program=NULL;
-  )
-  if(sys->queue) {
-    clReleaseCommandQueue(sys->queue);
-    sys->queue=NULL;
-  }
-  if(sys->context) {
-    clReleaseContext(sys->context);
-    sys->context=NULL;
-  }
-  if(sys->states_b[0]) {
-    clReleaseMemObject(sys->states_b[0]);
-    sys->states_b[0]=NULL;
-  }
-  if(sys->states_b[1]) {
-    clReleaseMemObject(sys->states_b[1]);
-    sys->states_b[1]=NULL;
-  }
-  if(sys->init_k[0]) {
-    clReleaseKernel(sys->init_k[0]);
-    sys->init_k[0])=NULL;
-  }
-  if(sys->init_k[1]) {
-    clReleaseKernel(sys->init_k[1]);
-    sys->init_k[1])=NULL;
-  }
-  if(sys->init_arg) {
-    clReleaseMemObject(sys->init_arg);
-    sys->init_arg=NULL;
-  }
-  if(sys->main_k[0]) {
-    clReleaseKernel(sys->main_k[0]);
-    sys->main_k[0])=NULL;
-  }
-  if(sys->main_k[1]) {
-    clReleaseKernel(sys->main_k[1]);
-    sys->main_k[1])=NULL;
-  }
-  if(sys->main_arg) {
-    clReleaseMemObject(sys->main_arg);
-    sys->main_arg=NULL;
-  }
-  if(sys->meas_k[0]) {
-    clReleaseKernel(sys->meas_k[0]);
-    sys->meas_k[0])=NULL;
-  }
-  if(sys->meas_k[1]) {
-    clReleaseKernel(sys->meas_k[1]);
-    sys->meas_k[1])=NULL;
-  }
-  if(sys->meas_arg) {
-    clReleaseMemObject(sys->meas_arg);
-    sys->meas_arg=NULL;
-  }
-  if(sys->output_b) {
-    clReleaseMemObject(sys->output_b);
-    sys->output_b=NULL;
-  }
+  if(sys->program) {clReleaseProgram(sys->program); sys->program=NULL;}
+  if(sys->queue) {clReleaseCommandQueue(sys->queue); sys->queue=NULL;}
+  if(sys->context) {clReleaseContext(sys->context); sys->context=NULL;}
+  if(sys->states_b[0]) {clReleaseMemObject(sys->states_b[0]); sys->states_b[0]=NULL;}
+  if(sys->states_b[1]) {clReleaseMemObject(sys->states_b[1]); sys->states_b[1]=NULL;}
+  if(sys->init_k[0]) {clReleaseKernel(sys->init_k[0]); sys->init_k[0])=NULL;}
+  if(sys->init_k[1]) {clReleaseKernel(sys->init_k[1]); sys->init_k[1])=NULL;}
+  if(sys->init_arg) {clReleaseMemObject(sys->init_arg); sys->init_arg=NULL;}
+  if(sys->main_k[0]) {clReleaseKernel(sys->main_k[0]); sys->main_k[0])=NULL;}
+  if(sys->main_k[1]) {clReleaseKernel(sys->main_k[1]); sys->main_k[1])=NULL;}
+  if(sys->main_arg) {clReleaseMemObject(sys->main_arg); sys->main_arg=NULL;}
+  if(sys->meas_k[0]) {clReleaseKernel(sys->meas_k[0]); sys->meas_k[0])=NULL;}
+  if(sys->meas_k[1]) {clReleaseKernel(sys->meas_k[1]); sys->meas_k[1])=NULL;}
+  if(sys->meas_arg) {clReleaseMemObject(sys->meas_arg); sys->meas_arg=NULL;}
+  if(sys->output_b) {clReleaseMemObject(sys->output_b); sys->output_b=NULL;}
 
   free(sys);
 }
