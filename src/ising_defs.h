@@ -16,40 +16,57 @@ GNU General Public License for more details.
 #ifndef ISING_DEFS_HEADER
 #define ISING_DEFS_HEADER
 
-#ifdef __OPENCL_VERSION__
-typedef char state_t;
-typedef char4 state_v;
-typedef float float_t;
-typedef int int_t;
-#else
-typedef cl_char state_t;
-typedef cl_char4 state_v;
-typedef cl_float float_t;
-typedef cl_int int_t;
-#endif
-
 #define SIZEX 64
 #define SIZEY 64
 #define VECLEN (SIZEX*SIZEY)
 #define BUFFLEN 1024
 
-struct ising_measure
+#ifdef __OPENCL_VERSION__
+typedef float state_t;
+typedef float out_t;
+typedef int int_t;
+typedef float float_t;
+typedef long rand_st;
+#else
+typedef cl_float state_t;
+typedef cl_float out_t;
+typedef cl_int int_t;
+typedef cl_float float_t;
+typedef cl_long rand_st;
+#endif
+
+struct output_s
 {
-  float_t a;
+  state_t state[VECLEN*BUFFLEN];
+  out_t mag[BUFFLEN];
+  out_t en[BUFFLEN];
 };
 
-struct ising_data
+struct state_s
 {
-  state_t data[BUFFLEN*VECLEN];
-  struct ising_measure measure[BUFFLEN];
-  int_t rseed[VECLEN];
+  state_t state[VECLEN];
+  rand_st randi[VECLEN];
   int_t counter;
 };
 
-struct ising_arg
+struct init_arg_s
+{
+  rand_st rseed;
+};
+
+struct main_arg_s
 {
   float_t beta;
-  int_t rseed;
 };
+
+struct meas_arg_s
+{
+};
+
+typedef struct state_s* state_p;
+typedef struct output_s* output_p;
+typedef struct init_arg_s* init_arg_p;
+typedef struct main_arg_s* main_arg_p;
+typedef struct meas_arg_s* meas_arg_p;
 
 #endif

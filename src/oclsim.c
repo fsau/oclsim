@@ -29,42 +29,42 @@ GNU General Public License for more details.
 __LINE__, __FILE__, __func__, (x));}
 #define CHKERROR(flag,str) {if(flag){PERROR(str);exit(1);};}
 
-struct oclsim_con
+struct oclsim_sys
 {
   cl_platform_id platform;
   cl_device_id device;
   cl_context context;
   cl_command_queue queue;
-};
-
-struct oclsim_sys
-{
-  oclCon con;
   cl_program program;
+
   cl_mem states_b[2];
   size_t states_s;
 
-  cl_kernel init;
+  cl_kernel init_k;
+  dims_i init_dims;
   cl_mem init_arg;
   size_t init_arg_s;
 
-  cl_kernel main[2];
+  cl_kernel main_k[2];
+  dims_i main_dims;
   cl_mem main_arg;
   size_t main_arg_s;
   size_t main_local_s;
 
-  cl_kernel meas[2];
+  cl_kernel meas_k[2];
+  dims_i meas_dims;
   cl_mem meas_arg;
   size_t meas_arg_s;
   size_t meas_local_s;
 
-  // cl_event *events;
+  cl_mem output_b;
+  size_t output_s;
 };
 
-oclCon
-oclsim_new_con(int plat_i, int dev_i)
+oclSys
+cls_new_sys(int plat_i, int dev_i)
 {
-  oclCon newcon = malloc(sizeof(struct oclsim_con));
+  oclSys newsys = (oclSys)calloc(1,sizeof(struct oclsim_sys));
   cl_int err=0;
   cl_uint plats_n;
 
@@ -75,73 +75,80 @@ oclsim_new_con(int plat_i, int dev_i)
 	err = clGetPlatformIDs(plats_n, platforms, NULL);
   CHKERROR(err<0,"Couldn't idenfity platforms");
 
-  newcon->platform = platforms[plat_i];
+  newsys->platform = platforms[plat_i];
 
   char platname[100];
-  err = clGetPlatformInfo(newcon->platform,CL_PLATFORM_NAME,100,platname,NULL);
+  err = clGetPlatformInfo(newsys->platform,CL_PLATFORM_NAME,100,platname,NULL);
   CHKERROR(err<0,"Couldn't get platform name");
   PINFORM("Selected platform: %s", platname);
 
   cl_uint devs_n;
-  err=clGetDeviceIDs(newcon->platform,CL_DEVICE_TYPE_ALL,0,NULL,&devs_n);
+  err=clGetDeviceIDs(newsys->platform,CL_DEVICE_TYPE_ALL,0,NULL,&devs_n);
 
   cl_device_id devices[devs_n];
-  err=clGetDeviceIDs(newcon->platform,CL_DEVICE_TYPE_ALL,devs_n,devices,NULL);
+  err=clGetDeviceIDs(newsys->platform,CL_DEVICE_TYPE_ALL,devs_n,devices,NULL);
   CHKERROR(err<0,"Couldn't identify device");
   CHKERROR((dev_i<0)||(dev_i>=devs_n),"Selected device is out of range");
 
-  newcon->device = devices[dev_i];
-  newcon->context = clCreateContext(NULL, 1, &newcon->device, NULL, NULL, &err);
+  newsys->device = devices[dev_i];
+  newsys->context = clCreateContext(NULL, 1, &newsys->device, NULL, NULL, &err);
   CHKERROR(err<0,"Couldn't create context");
 
-  newcon->queue = clCreateCommandQueueWithProperties(newcon->context,
-                  newcon->device,(const cl_queue_properties[])
+  newsys->queue = clCreateCommandQueueWithProperties(newsys->context,
+                  newsys->device,(const cl_queue_properties[])
                   {CL_QUEUE_PROPERTIES,CL_QUEUE_PROFILING_ENABLE, 0}, &err);
 
-  return newcon;
+  return newsys;
 }
 
-oclSys
-oclsim_new_sys_from_str(oclCon con, char *src_str, size_t states_size)
+void
+cls_load_sys_from_str(oclSys sys, char *src_str, size_t states_size)
 {
   cl_int err=0;
-  oclSys new_sys = malloc(sizeof(struct oclsim_sys));
   size_t src_size = strlen(src_str);
 
-  new_sys->program = clCreateProgramWithSource(con->context, 1,(const char**)
+  sys->program = clCreateProgramWithSource(con->context, 1,(const char**)
                                                &src_str, &src_size, &err);
   CHKERROR(err<0, "Couldn't create program");
 
-  err = clBuildProgram(new_sys->program, 0, NULL, "-I.", NULL, NULL);
+  err = clBuildProgram(sys->program, 0, NULL, "-I.", NULL, NULL);
   if(err < 0) // Print compilation log if fails for debugging code
   {
     size_t log_size;
-    clGetProgramBuildInfo(new_sys->program, con->device,
+    clGetProgramBuildInfo(sys->program, con->device,
                           CL_PROGRAM_BUILD_LOG, 0, NULL, &log_size);
     char *log_buff = (char*)malloc(log_size + 1);
     log_buff[log_size] = '\0';
-    clGetProgramBuildInfo(new_sys->program, con->device,
+    clGetProgramBuildInfo(sys->program, con->device,
                           CL_PROGRAM_BUILD_LOG, log_size, log_buff, NULL);
     printf("%s\n", log_buff);
     free(log_buff);
     exit(1);
   }
 
+  sys->init = clCreateKernel(sys->program, INIT_KERNEL_NAME, &err);
+  sys->main_k[0] = clCreateKernel(sys->program, MAIN_KERNEL_NAME, &err);
+  sys->main_k[1] = clCreateKernel(sys->program, MAIN_KERNEL_NAME, &err);
+  sys->meas_k[0] = clCreateKernel(sys->program, MEASURE_KERNEL_NAME, &err);
+  sys->meas_k[1] = clCreateKernel(sys->program, MEASURE_KERNEL_NAME, &err);
+
+  sys->states_s = states_size;
+  sys->states_b[0] = clCreateBuffer(sys->context, CL_MEM_READ_WRITE, states_size, NULL, &err);
+  sys->states_b[1] = clCreateBuffer(sys->context, CL_MEM_READ_WRITE, states_size, NULL, &err);
+
+  // get binaries:
   // size_t kernels_n;
-  // err=clGetProgramInfo(new_sys->program, CL_PROGRAM_NUM_KERNELS, sizeof(size_t),
+  // err=clGetProgramInfo(sys->program, CL_PROGRAM_NUM_KERNELS, sizeof(size_t),
   //     &kernels_n, NULL);
-  // new_sys->kernels = malloc(sizeof(cl_kernel*)*kernels_n);
-  // new_sys->kernels[kernels_n]=NULL;
-  // err |= clCreateKernelsInProgram(new_sys->program, kernels_n, &new_sys->kernels[0],
+  // sys->kernels = malloc(sizeof(cl_kernel*)*kernels_n);
+  // sys->kernels[kernels_n]=NULL;
+  // err |= clCreateKernelsInProgram(sys->program, kernels_n, &new_sys->kernels[0],
   //        NULL); // Get all kernels in a NULL terminated array
   // CHKERROR(err<0,"Couldn't get kernels");
-
-  new_sys->con = con;
-  return new_sys;
 }
 
-oclSys
-oclsim_new_sys_from_file(oclCon con, char *src_filename, size_t states_size)
+void
+cls_load_sys_from_file(oclSys sys, char *src_filename, size_t states_size)
 {
   FILE *src_fh = fopen(src_filename, "r");
   char *src_buff;
@@ -155,53 +162,162 @@ oclsim_new_sys_from_file(oclCon con, char *src_filename, size_t states_size)
   src_buff[src_size] = '\0';
   fread(src_buff, sizeof(char), src_size, src_fh); // Copy src to buffer
   fclose(src_fh);
-  oclSys new_sys = oclsim_new_sys_from_str(con, src_buff, states_size);
+  oclSys new_sys = oclsim_new_sys_from_str(sys, src_buff, states_size);
   free(src_buff);
 
   return new_sys;
 }
 
-int
-oclsim_enqueue(oclSys sys)
-{
-
-}
-
-int
-oclsim_set_arg(oclSys sys, void *dataptr, size_t size)
-{
-
-}
-
-int
-oclsim_get_data(oclSys sys, void *dataptr, size_t size)
-{
-
-}
-
 void
-oclsim_destroy_con(oclCon con)
+cls_set_init_arg(oclSys sys, void* arg, size_t arg_s, dims_i dims)
 {
-  clReleaseCommandQueue(con->queue);
-  clReleaseContext(con->context);
-  free(con);
-}
+  cl_int err=0;
 
-void
-oclsim_destroy_sys(oclSys sys)
-{
-  while(*sys->kernels!=NULL)
+  if((sys->init_arg_s!=arg_s)||(sys->init_arg==NULL))
   {
-    clReleaseKernel(*sys->kernels);
-    sys->kernels++;
+    if(sys->init_arg!=NULL) clReleaseMemObject(sys->init_arg);
+    sys->init_arg_s = arg_s;
+    sys->init_arg = clCreateBuffer(sys->context, CL_MEM_READ_ONLY, arg_s, NULL, &err);
   }
-  clReleaseProgram(sys->program);
-  free(sys->kernels);
+
+  err |= clSetKernelArg(sys->init_k, 0, sizeof(cl_mem), sys->states_b[0]);
+  err |= clSetKernelArg(sys->init_k, 1, sizeof(cl_mem), sys->init_arg);
+  err |= clEnqueueWriteBuffer(sys->queue, sys->init_arg, CL_FALSE, 0, arg_s, arg, 0, NULL, NULL);
+  sys->init_dims = dims;
+
+  CHKERROR(err<0,"Coudn't create/configure init kernel");
+}
+
+void
+cls_set_main_arg(oclSys sys, void* arg, size_t arg_s, size_t local_s, dims_i dims)
+{
+  cl_int err=0;
+
+  if((sys->main_arg_s!=arg_s)||(sys->main_arg==NULL))
+  {
+    if(sys->main_arg!=NULL) clReleaseMemObject(sys->main_arg);
+    sys->main_arg_s = arg_s;
+    sys->main_local_s = local_s;
+    sys->main_arg = clCreateBuffer(sys->context, CL_MEM_READ_ONLY, arg_s, NULL, &err);
+  }
+
+  err |= clSetKernelArg(sys->main_k[0], 0, sizeof(cl_mem), sys->states_b[1]);
+  err |= clSetKernelArg(sys->main_k[0], 1, sizeof(cl_mem), sys->states_b[0]);
+  err |= clSetKernelArg(sys->main_k[0], 2, local_s, NULL);
+  err |= clSetKernelArg(sys->main_k[0], 3, sizeof(cl_mem), sys->main_arg);
+  err |= clSetKernelArg(sys->main_k[1], 0, sizeof(cl_mem), sys->states_b[0]);
+  err |= clSetKernelArg(sys->main_k[1], 1, sizeof(cl_mem), sys->states_b[1]);
+  err |= clSetKernelArg(sys->main_k[1], 2, local_s, NULL);
+  err |= clSetKernelArg(sys->main_k[1], 3, sizeof(cl_mem), sys->main_arg);
+  err |= clEnqueueWriteBuffer(sys->queue, sys->main_arg, CL_FALSE, 0, arg_s, arg, 0, NULL, NULL);
+  sys->main_dims = dims;
+
+  CHKERROR(err<0,"Coudn't create/configure main kernel");
+}
+
+void
+cls_set_meas_arg(oclSys sys, void* arg, size_t arg_s, size_t local_s, size_t meas_s, dims_i dims)
+{
+  cl_int err=0;
+
+  if((sys->meas_arg_s!=arg_s)||(sys->meas_local_s!=arg_s)||(sys->meas_arg==NULL))
+  {
+    if(sys->meas_arg!=NULL) clReleaseMemObject(sys->meas_arg);
+    sys->meas_arg_s = arg_s;
+    sys->meas_arg = clCreateBuffer(sys->context, CL_MEM_READ_ONLY, arg_s, NULL, &err);
+  }
+
+  if((sys->output_s!=meas_s)||(sys->output_b==NULL))
+  {
+    if(sys->output_b!=NULL) clReleaseMemObject(sys->output_b);
+    sys->output_s = meas_s;
+    sys->output_b = clCreateBuffer(sys->context, CL_MEM_WRITE_ONLY, meas_s, NULL, &err);
+  }
+
+  sys->meas_dims = dims;
+  sys->meas_local_s = local_s;
+  err |= clSetKernelArg(sys->meas_k[0], 0, sizeof(cl_mem), sys->output_b);
+  err |= clSetKernelArg(sys->meas_k[0], 1, sizeof(cl_mem), sys->states_b[0]);
+  err |= clSetKernelArg(sys->meas_k[0], 2, local_s, NULL);
+  err |= clSetKernelArg(sys->meas_k[0], 3, sizeof(cl_mem), sys->meas_arg);
+  err |= clSetKernelArg(sys->meas_k[1], 0, sizeof(cl_mem), sys->output_b);
+  err |= clSetKernelArg(sys->meas_k[1], 1, sizeof(cl_mem), sys->states_b[1]);
+  err |= clSetKernelArg(sys->meas_k[1], 2, local_s, NULL);
+  err |= clSetKernelArg(sys->meas_k[1], 3, sizeof(cl_mem), sys->meas_arg);
+  err |= clEnqueueWriteBuffer(sys->queue, sys->meas_arg, CL_FALSE, 0, arg_s, arg, 0, NULL, NULL);
+
+  CHKERROR(err<0,"Coudn't create/configure main kernel");
+}
+
+void
+cls_destroy_sys(oclSys sys)
+{
+  if(sys->program) (
+    clReleaseProgram(sys->program);
+    sys->program=NULL;
+  )
+  if(sys->queue) {
+    clReleaseCommandQueue(sys->queue);
+    sys->queue=NULL;
+  }
+  if(sys->context) {
+    clReleaseContext(sys->context);
+    sys->context=NULL;
+  }
+  if(sys->states_b[0]) {
+    clReleaseMemObject(sys->states_b[0]);
+    sys->states_b[0]=NULL;
+  }
+  if(sys->states_b[1]) {
+    clReleaseMemObject(sys->states_b[1]);
+    sys->states_b[1]=NULL;
+  }
+  if(sys->init_k[0]) {
+    clReleaseKernel(sys->init_k[0]);
+    sys->init_k[0])=NULL;
+  }
+  if(sys->init_k[1]) {
+    clReleaseKernel(sys->init_k[1]);
+    sys->init_k[1])=NULL;
+  }
+  if(sys->init_arg) {
+    clReleaseMemObject(sys->init_arg);
+    sys->init_arg=NULL;
+  }
+  if(sys->main_k[0]) {
+    clReleaseKernel(sys->main_k[0]);
+    sys->main_k[0])=NULL;
+  }
+  if(sys->main_k[1]) {
+    clReleaseKernel(sys->main_k[1]);
+    sys->main_k[1])=NULL;
+  }
+  if(sys->main_arg) {
+    clReleaseMemObject(sys->main_arg);
+    sys->main_arg=NULL;
+  }
+  if(sys->meas_k[0]) {
+    clReleaseKernel(sys->meas_k[0]);
+    sys->meas_k[0])=NULL;
+  }
+  if(sys->meas_k[1]) {
+    clReleaseKernel(sys->meas_k[1]);
+    sys->meas_k[1])=NULL;
+  }
+  if(sys->meas_arg) {
+    clReleaseMemObject(sys->meas_arg);
+    sys->meas_arg=NULL;
+  }
+  if(sys->output_b) {
+    clReleaseMemObject(sys->output_b);
+    sys->output_b=NULL;
+  }
+
   free(sys);
 }
 
 void
-oclsim_print_devices(void)
+cls_print_devices(void)
 {
 
 }
