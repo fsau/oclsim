@@ -19,9 +19,9 @@ GNU General Public License for more details.
 #define CL_TARGET_OPENCL_VERSION 200
 #include <CL/cl.h>
 
-#define INIT_K_NAME "init"
-#define MAIN_K_NAME "update"
-#define MEASURE_K_NAME "measure"
+#define INIT_K_NAME "init_k"
+#define MAIN_K_NAME "update_k"
+#define MEASURE_K_NAME "measure_k"
 
 typedef struct oclsim_sys* oclSys;
 

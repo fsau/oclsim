@@ -16,19 +16,12 @@ GNU General Public License for more details.
 #ifndef ISING_DEFS_HEADER
 #define ISING_DEFS_HEADER
 
-// Definitions & constants:
-#define SIZEX 64
-#define SIZEY 64
-#define NEIGH_N 4
 #define BUFFLEN 1024
-#define VECLEN (SIZEX*SIZEY)
-#define PROB_L (NEIGH_N+1)
-#define PROB_Z ((PROB_L-1)/2)
-#define PROB_MAX 1.0
+#define VECLEN 64
 
-#define GLOBAL_1D_LENGTH (VECLEN)
-#define GLOBAL_1D_RANGE {VECLEN,0,0}
-#define GLOBAL_2D_RANGE {SIZEX,SIZEY,0}
+#define GLOBAL_1D_LENGTH (VECLEN*VECLEN)
+#define GLOBAL_1D_RANGE {VECLEN*VECLEN,0,0}
+#define GLOBAL_2D_RANGE {VECLEN,VECLEN,0}
 
 #define LOCAL_2D_WIDTH 16
 #define LOCAL_1D_LENGTH (LOCAL_2D_WIDTH*LOCAL_2D_WIDTH)
@@ -37,8 +30,6 @@ GNU General Public License for more details.
 
 #define ISING_DIMS_1D ((dims_i){.dim=1,.global=GLOBAL_1D_RANGE,.local=LOCAL_1D_RANGE})
 #define ISING_DIMS_2D ((dims_i){.dim=2,.global=GLOBAL_2D_RANGE,.local=LOCAL_2D_RANGE})
-
-#define OVERSAMPLE 1
 
 // Macros:
 #define MAX(x,y) ((x)>(y)?(x):(y))

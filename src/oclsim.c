@@ -293,9 +293,9 @@ cls_get_meas(oclSys sys, void *out)
     err|=clFinish(sys->queue);
     err|= clEnqueueReadBuffer(sys->queue, sys->output_b, CL_TRUE, 0,
       sys->output_s, out, 0, NULL, NULL);
-    CHKERROR(err<0,"Coudn't read output data");
   }
 
+  CHKERROR(err<0,"Coudn't read output data");
   return sys->output_s;
 }
 

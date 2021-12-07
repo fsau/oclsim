@@ -27,11 +27,14 @@ randomize_seed(uint a)
   return a;
 }
 
-uint2 randomize_seed_more(uint2 seed, uint ij)
+uint2
+randomize_seed_more(uint2 seed, uint ij)
 {
-  uint lseed = randomize_seed(randomize_seed(seed.x + 4194181*ij));
-  uint hseed = randomize_seed(randomize_seed(seed.y + 8388449*ij));
-  return (uint2)((lseed<<8)||(hseed>>8),(hseed<<8)||(lseed>>8));
+  uint lseed = randomize_seed(seed.x + 4194181*ij);
+  uint hseed = randomize_seed(seed.y + 8388449*ij);
+  uint hseed2 = randomize_seed((lseed<<8)||(hseed>>8));
+  uint lseed2 = randomize_seed((hseed<<8)||(lseed>>8));
+  return (uint2)(hseed2,lseed2);
 }
 
 kernel void
@@ -105,6 +108,6 @@ measure(global struct output_s *output,
   if(i_l == 0)
   {
     state_t part_mag = local_buff[0];
-    output->mag[out_i] = part_mag;
+    output->mag[out_i] += part_mag;
   }
 }
