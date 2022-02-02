@@ -26,7 +26,7 @@ main(void)
   oclSys testsim = cls_new_sys(1,0);
   cls_load_sys_from_file(testsim, "./test.cl", sizeof(struct state_s));
 
-  struct init_arg_s init_arg = {.x0=0.0,.dx=1.0};
+  struct init_arg_s init_arg = {.x0=0.0,.dx=0.1};
   struct main_arg_s main_arg = {};
   struct meas_arg_s meas_arg = {};
 

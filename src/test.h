@@ -16,7 +16,7 @@ GNU General Public License for more details.
 #ifndef ISING_DEFS_HEADER
 #define ISING_DEFS_HEADER
 
-#define ITER 2
+#define ITER 1
 #define VECLEN 16
 
 #define GLOBAL_1D_LENGTH (VECLEN*VECLEN)

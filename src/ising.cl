@@ -38,7 +38,7 @@ randomize_seed_more(uint2 seed, uint ij)
 }
 
 kernel void
-init(global struct state_s *output,
+init_k(global struct state_s *output,
      constant struct init_arg_s *arg)
 {
   size_t i = get_global_id(0),
@@ -49,11 +49,15 @@ init(global struct state_s *output,
 
   output->state[ij] = (seed.x>seed.y)?-1:1;
   output->rseeds[ij] = randomize_seed_more(seed, ij);
-  output->counter = 0;
+
+  if(ij==0)
+  {
+    output->counter = 0;
+  }
 }
 
 kernel void
-update(global struct state_s *output,
+update_k(global struct state_s *output,
        global struct state_s *input,
        local void *lc_skpd,
        constant struct main_arg_s *arg)
@@ -83,7 +87,7 @@ update(global struct state_s *output,
 }
 
 kernel void
-measure(global struct output_s *output,
+measure_k(global struct output_s *output,
         global struct state_s *input,
         local void* lc_skpd,
         constant struct meas_arg_s *arg)
