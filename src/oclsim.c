@@ -90,9 +90,13 @@ cls_new_sys(int plat_i, int dev_i)
   newsys->context = clCreateContext(NULL, 1, &newsys->device, NULL, NULL, &err);
   CHKERROR(err<0,"Couldn't create context");
 
-  newsys->queue = clCreateCommandQueue(newsys->context,
-                  newsys->device,CL_QUEUE_PROFILING_ENABLE, &err);
+  newsys->queue = clCreateCommandQueueWithProperties(newsys->context,
+    newsys->device, (cl_queue_properties[])
+    {CL_QUEUE_PROPERTIES,CL_QUEUE_PROFILING_ENABLE,0}, &err);
 
+  newsys->state=0;
+
+  CHKERROR(err, "Couldn't create queue");
   return newsys;
 }
 
@@ -130,6 +134,7 @@ cls_load_sys_from_str(oclSys sys, char *src_str, size_t states_size)
   sys->states_s = states_size;
   sys->states_b[0] = clCreateBuffer(sys->context, CL_MEM_READ_WRITE, states_size, NULL, &err);
   sys->states_b[1] = clCreateBuffer(sys->context, CL_MEM_READ_WRITE, states_size, NULL, &err);
+  CHKERROR(err, "Couldn't load system kernels/state buffers");
 }
 
 void
@@ -158,9 +163,13 @@ cls_set_init_arg(oclSys sys, void* arg, size_t arg_s, dims_i dims)
 
   // if((sys->init_arg_s!=arg_s)||(sys->init_arg_b==NULL))
   // {
-  //   if(sys->init_arg_b!=NULL) clReleaseMemObject(sys->init_arg_b);
-  sys->init_arg_s = arg_s;
-  sys->init_arg_b = clCreateBuffer(sys->context, CL_MEM_READ_ONLY, arg_s, NULL, &err);
+  //   if(sys->init_arg_b!=NULL)
+  //   {
+  //     clReleaseMemObject(sys->init_arg_b);
+  //     sys->init_arg_b=NULL;
+  //   }
+    sys->init_arg_s = arg_s;
+    sys->init_arg_b = clCreateBuffer(sys->context, CL_MEM_READ_ONLY, arg_s, NULL, &err);
   // }
 
   sys->init_d = dims;
@@ -168,6 +177,7 @@ cls_set_init_arg(oclSys sys, void* arg, size_t arg_s, dims_i dims)
   err |= clSetKernelArg(sys->init_k, 1, sizeof(cl_mem), &sys->init_arg_b);
   err |= clEnqueueWriteBuffer(sys->queue, sys->init_arg_b, CL_FALSE, 0, arg_s, arg, 0, NULL, NULL);
 
+  fprintf(stderr, "%d\n", err);
   CHKERROR(err<0,"Coudn't create/configure init kernel");
 }
 
@@ -178,9 +188,13 @@ cls_set_main_arg(oclSys sys, void* arg, size_t arg_s, size_t local_s, dims_i dim
 
   // if((sys->main_arg_s!=arg_s)||(sys->main_arg_b==NULL))
   // {
-  //   if(sys->main_arg_b!=NULL) clReleaseMemObject(sys->main_arg_b);
-  sys->main_arg_s = arg_s;
-  sys->main_arg_b = clCreateBuffer(sys->context, CL_MEM_READ_ONLY, arg_s, NULL, &err);
+  //   if(sys->main_arg_b!=NULL)
+  //   {
+  //     clReleaseMemObject(sys->main_arg_b);
+  //     sys->main_arg_b=NULL;
+  //   }
+    sys->main_arg_s = arg_s;
+    sys->main_arg_b = clCreateBuffer(sys->context, CL_MEM_READ_ONLY, arg_s, NULL, &err);
   // }
 
   sys->main_d = dims;
@@ -197,7 +211,6 @@ cls_set_main_arg(oclSys sys, void* arg, size_t arg_s, size_t local_s, dims_i dim
   err |= clSetKernelArg(sys->main_k[1], 2, local_s, NULL);
   err |= clSetKernelArg(sys->main_k[1], 3, sizeof(cl_mem), &sys->main_arg_b);
 
-  printf("%d\n",err);
   CHKERROR(err<0,"Coudn't create/configure main kernel");
 }
 
@@ -208,16 +221,24 @@ cls_set_meas_arg(oclSys sys, void* arg, size_t arg_s, size_t local_s, size_t mea
 
   // if((sys->meas_arg_s!=arg_s)||(sys->meas_arg_b==NULL))
   // {
-  //   if(sys->meas_arg_b!=NULL) clReleaseMemObject(sys->meas_arg_b);
-  sys->meas_arg_s = arg_s;
-  sys->meas_arg_b = clCreateBuffer(sys->context, CL_MEM_READ_ONLY, arg_s, NULL, &err);
+  //   if(sys->meas_arg_b!=NULL)
+  //   {
+  //     clReleaseMemObject(sys->meas_arg_b);
+  //     sys->meas_arg_b=NULL;
+  //   }
+    sys->meas_arg_s = arg_s;
+    sys->meas_arg_b = clCreateBuffer(sys->context, CL_MEM_READ_ONLY, arg_s, NULL, &err);
   // }
 
   // if((sys->output_s!=meas_s)||(sys->output_b==NULL))
   // {
-  //   if(sys->output_b!=NULL) clReleaseMemObject(sys->output_b);
-  sys->output_s = meas_s;
-  sys->output_b = clCreateBuffer(sys->context, CL_MEM_READ_WRITE, meas_s, NULL, &err);
+  //   if(sys->output_b!=NULL)
+  //   {
+  //     clReleaseMemObject(sys->output_b);
+  //     sys->output_b=NULL;
+  //   }
+    sys->output_s = meas_s;
+    sys->output_b = clCreateBuffer(sys->context, CL_MEM_READ_WRITE, meas_s, NULL, &err);
   // }
 
   sys->meas_d = dims;
@@ -287,13 +308,13 @@ cls_get_meas(oclSys sys, void *out)
 {
   cl_int err=0;
 
-  if(out!=NULL)
-  {
+  // if(out!=NULL)
+  // {
     err|=clFlush(sys->queue);
     err|=clFinish(sys->queue);
     err|= clEnqueueReadBuffer(sys->queue, sys->output_b, CL_TRUE, 0,
       sys->output_s, out, 0, NULL, NULL);
-  }
+  // }
 
   CHKERROR(err<0,"Coudn't read output data");
   return sys->output_s;

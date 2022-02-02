@@ -16,8 +16,8 @@ GNU General Public License for more details.
 #ifndef ISING_DEFS_HEADER
 #define ISING_DEFS_HEADER
 
-#define BUFFLEN 1024
-#define VECLEN 64
+#define ITER 2
+#define VECLEN 16
 
 #define GLOBAL_1D_LENGTH (VECLEN*VECLEN)
 #define GLOBAL_1D_RANGE {VECLEN*VECLEN,0,0}
@@ -41,15 +41,12 @@ GNU General Public License for more details.
 
 // Typedefs:
 #ifdef __OPENCL_VERSION__
-typedef char state_t;
-typedef float out_t;
+typedef float state_t;
 typedef int int_t;
 typedef uint uint_t;
 typedef float float_t;
-typedef uint2 rand_st;
 #else
-typedef cl_char state_t;
-typedef cl_float out_t;
+typedef cl_float state_t;
 typedef cl_int int_t;
 typedef cl_uint uint_t;
 typedef cl_float float_t;
@@ -65,30 +62,29 @@ typedef struct meas_arg_s* meas_arg_p;
 // Structs:
 struct output_s
 {
-  state_t states[BUFFLEN][VECLEN];
-  out_t mag[BUFFLEN];
+  state_t out[VECLEN*VECLEN];
+  int_t counter;
 };
 
 struct state_s
 {
-  state_t state[VECLEN];
-  rand_st rseeds[VECLEN];
+  state_t states[VECLEN*VECLEN];
   int_t counter;
 };
 
 struct init_arg_s
 {
-  rand_st rseed;
+  state_t x0, dx;
 };
 
 struct main_arg_s
 {
-  uint_t probs[PROB_L];
+  int_t und;
 };
 
 struct meas_arg_s
 {
-  uint_t idiv;
+  int_t und;
 };
 
 #endif
