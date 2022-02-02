@@ -1,6 +1,6 @@
 CC=gcc
 CFLAGS=-g -O3 -MMD -lm -lOpenCL
-PGR?=test
+PGR?=main
 OBJS=oclsim
 
 EXECFILE=$(addprefix build/, $(PGR))

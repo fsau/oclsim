@@ -23,7 +23,7 @@ GNU General Public License for more details.
 void
 main(void)
 {
-  float beta = 1.0;
+  float beta = 1.8;
 
   oclSys ising = cls_new_sys(1,0);
   cls_load_sys_from_file(ising, "./ising.cl", sizeof(struct state_s));
@@ -34,10 +34,7 @@ main(void)
 
   uint rseed = (uint)time(NULL);
 	srand(rseed);
-	srand(rand());
-  cl_uint2 new_seed;
-  new_seed.x = rand();
-  new_seed.y = rand();
+  cl_uint new_seed = rand();
   init_arg.rseed = new_seed;
 
   for(int i = 0; i < PROB_L; i++)
@@ -45,9 +42,10 @@ main(void)
     main_arg.probs[i] = (cl_ulong)CL_UINT_MAX * PROB_MAX * ((i <= PROB_Z)? 1 : exp(-beta*(i-PROB_Z)));
   }
 
-  cls_set_init_arg(ising, &init_arg, sizeof(init_arg), ISING_DIMS_1D);
+  cls_set_init_arg(ising, &init_arg, sizeof(init_arg), ISING_DIMS_2D);
   cls_set_main_arg(ising, &main_arg, sizeof(main_arg), 1, ISING_DIMS_2D);
   cls_set_meas_arg(ising, &meas_arg, sizeof(meas_arg), sizeof(state_t)*LOCAL_1D_LENGTH, sizeof(struct output_s), ISING_DIMS_1D);
+
   cls_run_init(ising);
   for(int i = 0; i < BUFFLEN; i++)
   {

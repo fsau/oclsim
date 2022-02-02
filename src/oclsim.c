@@ -177,7 +177,6 @@ cls_set_init_arg(oclSys sys, void* arg, size_t arg_s, dims_i dims)
   err |= clSetKernelArg(sys->init_k, 1, sizeof(cl_mem), &sys->init_arg_b);
   err |= clEnqueueWriteBuffer(sys->queue, sys->init_arg_b, CL_FALSE, 0, arg_s, arg, 0, NULL, NULL);
 
-  fprintf(stderr, "%d\n", err);
   CHKERROR(err<0,"Coudn't configure init kernel");
 }
 

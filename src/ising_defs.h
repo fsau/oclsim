@@ -55,14 +55,14 @@ typedef float out_t;
 typedef int int_t;
 typedef uint uint_t;
 typedef float float_t;
-typedef uint2 rand_st;
+typedef uint rand_st;
 #else
 typedef cl_char state_t;
 typedef cl_float out_t;
 typedef cl_int int_t;
 typedef cl_uint uint_t;
 typedef cl_float float_t;
-typedef cl_uint2 rand_st;
+typedef cl_uint rand_st;
 #endif
 
 typedef struct state_s* state_p;
