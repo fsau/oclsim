@@ -1,0 +1,10 @@
+data=csvread("test.dat");
+outdata=data(:,1);
+indata=data(:,2);
+outdata=outdata/max(outdata);
+indata(indata>2.0)=2;
+indata(outdata<0.999)=2;
+indata=1-indata/2;
+zdata = (1-(indata+1-outdata)).**(1/3);
+zmat = reshape(zdata,sqrt(size(zdata,1))*[1,1]);
+imwrite(zmat,"test.png");

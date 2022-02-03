@@ -4,13 +4,15 @@ kernel void
 init_k(global struct state_s *output,
        constant struct init_arg_s *arg)
 {
-  size_t i = get_global_id(0);
+  size_t i = get_global_id(0), j = get_global_id(1), ij = IND(i,j);
+  state_t z0;
 
-  output->states[i] = arg->x0 + i*arg->dx;
-  if(i==0)
-  {
-    output->counter=1;
-  }
+  z0.x = arg->z0.x+arg->dz.x*i;
+  z0.y = arg->z0.y+arg->dz.y*j;
+
+  output->states[ij] = z0;
+  output->z0[ij]=z0;
+  output->lastc[ij]=1;
 }
 
 kernel void
@@ -19,15 +21,19 @@ update_k(global struct state_s *output,
          local void *lc_skpd,
          constant struct main_arg_s *arg)
 {
-  size_t i = get_global_id(0);
+  size_t i = get_global_id(0), j = get_global_id(1), ij = IND(i,j);
+  state_t in = input->states[ij], z0 = input->z0[ij], new;
+  int_t lcount = input->lastc[ij];
 
-  state_t in = input->states[i];
-  output->states[i] = in+in;
+  new.x = in.x*in.x-in.y*in.y+z0.x; // z^2+z0
+  new.y = 2*in.x*in.y+z0.y;
 
-  if(i==0)
-  {
-    output->counter = input->counter+1;
-  }
+  float_t abs = new.x*new.x + new.y*new.y;
+  int_t mask = abs<=4.0;
+
+  output->states[ij] = new*mask+in*(1-mask); // update or hold
+  output->lastc[ij] = lcount+mask;
+  output->z0[ij] = z0;
 }
 
 kernel void
@@ -37,10 +43,7 @@ measure_k(global struct output_s *output,
           constant struct meas_arg_s *arg)
 {
   size_t i = get_global_id(0);
-  output->out[i] = input->states[i];
-
-  if(i==0)
-  {
-    output->counter = input->counter;
-  }
+  state_t ins = input->states[i];
+  output->lastc[i] = input->lastc[i];
+  output->abs[i] = ins.x*ins.x+ins.y*ins.y;
 }

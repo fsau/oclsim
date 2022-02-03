@@ -26,12 +26,13 @@ main(void)
   oclSys testsim = cls_new_sys(1,0);
   cls_load_sys_from_file(testsim, "./test.cl", sizeof(struct state_s));
 
-  struct init_arg_s init_arg = {.x0=0.0,.dx=0.1};
-  struct main_arg_s main_arg = {};
-  struct meas_arg_s meas_arg = {};
+  struct init_arg_s init_arg = {.z0={.x=-0.56,.y=-0.62},
+                                .dz={.x=0.1/VECLEN,.y=0.1/VECLEN}};
+  struct main_arg_s main_arg;
+  struct meas_arg_s meas_arg;
 
-  cls_set_init_arg(testsim, &init_arg, sizeof(init_arg), ISING_DIMS_1D);
-  cls_set_main_arg(testsim, &main_arg, sizeof(main_arg), 1, ISING_DIMS_1D);
+  cls_set_init_arg(testsim, &init_arg, sizeof(init_arg), ISING_DIMS_2D);
+  cls_set_main_arg(testsim, &main_arg, sizeof(main_arg), 1, ISING_DIMS_2D);
   cls_set_meas_arg(testsim, &meas_arg, sizeof(meas_arg), 1, sizeof(struct output_s), ISING_DIMS_1D);
 
   cls_run_init(testsim);
@@ -45,7 +46,6 @@ main(void)
   cls_get_meas(testsim, out);
 
   printf("\n");
-  for(int i = 0; i < VECLEN*VECLEN; i++) printf("%f ",out->out[i]);
-  printf("\n");
+  for(int i = 0; i < VECLEN*VECLEN; i++) printf("%d,%f\n",out->lastc[i],out->abs[i]);
   cls_release_sys(testsim);
 }

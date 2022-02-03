@@ -210,7 +210,7 @@ cls_set_main_arg(oclSys sys, void* arg, size_t arg_s, size_t local_s, dims_i dim
   err |= clSetKernelArg(sys->main_k[1], 2, local_s, NULL);
   err |= clSetKernelArg(sys->main_k[1], 3, sizeof(cl_mem), &sys->main_arg_b);
 
-  CHKERROR(err<0,"Coudn't create/configure main kernel");
+  CHKERROR(err<0,"Coudn't create/configure update kernel");
 }
 
 void

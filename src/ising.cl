@@ -55,7 +55,7 @@ update_k(global struct state_s *output,
   size_t i = get_global_id(0),
          j = get_global_id(1);
   size_t ij = IND(i,j);
-  uint rand_sample = randomize_seed(input->rseeds[ij] + 42013*ij);
+  uint rand_sample = input->rseeds[ij];
   uint iter =  input->counter;
 
   state_t self_s = input->state[IND(i,j)];
@@ -69,7 +69,7 @@ update_k(global struct state_s *output,
   char flip = par&&(rand_sample < arg->probs[(size_t)(PROB_Z + s_sum/2)]);
 
   output->state[ij] = (flip)?-self_s:self_s;
-  output->rseeds[ij] = randomize_seed(input->rseeds[ij] + 98473*ij);;
+  output->rseeds[ij] = randomize_seed(rand_sample + 42013*ij);
   if(ij==0)
   {
     output->counter = iter+1;

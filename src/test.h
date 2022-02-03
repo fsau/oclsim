@@ -16,8 +16,8 @@ GNU General Public License for more details.
 #ifndef ISING_DEFS_HEADER
 #define ISING_DEFS_HEADER
 
-#define ITER 1
-#define VECLEN 16
+#define ITER 512
+#define VECLEN 1024
 
 #define GLOBAL_1D_LENGTH (VECLEN*VECLEN)
 #define GLOBAL_1D_RANGE {VECLEN*VECLEN,0,0}
@@ -34,19 +34,19 @@ GNU General Public License for more details.
 // Macros:
 #define MAX(x,y) ((x)>(y)?(x):(y))
 #define MIN(x,y) ((x)>(y)?(y):(x))
-#define IND(x,y) ( (x)*SIZEX + (y) ) // 2D xy -> 1D vector
-#define RIND(x,y) ( ((x)%SIZEX)*SIZEX + ((y)%SIZEY) ) // rectangular
-#define TIND(x,y) ( ((x)*SIZEX + (y))%VECLEN ) // torus
-#define GETI(c,x,y) ( *(y) = ((c)-(*(x)=(c)/SIZEX)) ); // 1D vector -> 2D xy
+#define IND(x,y) ( (x)*VECLEN + (y) ) // 2D xy -> 1D vector
+#define RIND(x,y) ( ((x)%VECLEN)*VECLEN + ((y)%VECLEN) ) // rectangular
+#define TIND(x,y) ( ((x)*VECLEN + (y))%VECLEN ) // torus
+#define GETI(c,x,y) ( *(y) = ((c)-(*(x)=(c)/VECLEN)) ); // 1D vector -> 2D xy
 
 // Typedefs:
 #ifdef __OPENCL_VERSION__
-typedef float state_t;
+typedef double2 state_t;
 typedef int int_t;
 typedef uint uint_t;
 typedef float float_t;
 #else
-typedef cl_float state_t;
+typedef cl_double2 state_t;
 typedef cl_int int_t;
 typedef cl_uint uint_t;
 typedef cl_float float_t;
@@ -62,24 +62,25 @@ typedef struct meas_arg_s* meas_arg_p;
 // Structs:
 struct output_s
 {
-  state_t out[VECLEN*VECLEN];
-  int_t counter;
+  float_t abs[VECLEN*VECLEN];
+  int_t lastc[VECLEN*VECLEN];
 };
 
 struct state_s
 {
   state_t states[VECLEN*VECLEN];
-  int_t counter;
+  state_t z0[VECLEN*VECLEN];
+  int_t lastc[VECLEN*VECLEN];
 };
 
 struct init_arg_s
 {
-  state_t x0, dx;
+  state_t z0, dz;
 };
 
 struct main_arg_s
 {
-  int_t und;
+  int_t und; // can't be empty (yet)
 };
 
 struct meas_arg_s

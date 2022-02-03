@@ -23,7 +23,7 @@ GNU General Public License for more details.
 void
 main(void)
 {
-  float beta = 1.8;
+  float beta = 1.5;
 
   oclSys ising = cls_new_sys(1,0);
   cls_load_sys_from_file(ising, "./ising.cl", sizeof(struct state_s));
