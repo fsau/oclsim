@@ -7,11 +7,11 @@ init_k(global struct state_s *output,
   size_t i = get_global_id(0), j = get_global_id(1), ij = IND(i,j);
   state_t z0;
 
-  z0.x = arg->z0.x+arg->dz.x*i;
-  z0.y = arg->z0.y+arg->dz.y*j;
+  z0.x = arg->z0.x+arg->dz.x*((int_t)i-VECLEN/2);
+  z0.y = arg->z0.y+arg->dz.y*((int_t)j-VECLEN/2);
 
   output->states[ij] = z0;
-  output->z0[ij]=z0;
+  output->z0[ij] = z0;
   output->lastc[ij]=1;
 }
 

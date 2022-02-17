@@ -20,14 +20,16 @@ GNU General Public License for more details.
 #include <time.h>
 #include <math.h>
 
+#define ITER 10000
+
 void
 main(void)
 {
   oclSys testsim = cls_new_sys(1,0);
   cls_load_sys_from_file(testsim, "./test.cl", sizeof(struct state_s));
 
-  struct init_arg_s init_arg = {.z0={.x=-0.56,.y=-0.62},
-                                .dz={.x=0.1/VECLEN,.y=0.1/VECLEN}};
+  struct init_arg_s init_arg = {.z0={.x=-0.55520008,       .y=-0.61964444},
+                                .dz={.x= 0.0000001l/VECLEN,.y= 0.0000001l/VECLEN}};
   struct main_arg_s main_arg;
   struct meas_arg_s meas_arg;
 
